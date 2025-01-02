@@ -1,0 +1,42 @@
+stages:
+  - build     # Compilation et création des images Docker
+  - test      # Tests des services
+  - deploy    # Déploiement des services avec Docker Compose
+
+# Variables globales pour Docker
+variables:
+  DOCKER_HOST: tcp://docker:2375/
+  DOCKER_TLS_CERTDIR: ""
+
+# Service Docker requis
+services:
+  - docker:dind
+
+# Étape de Build
+build:
+  stage: build
+  script:
+    - echo "Building Docker images..."
+    - docker build -t gestion-backend ./backend
+    - docker build -t gestion-frontend ./frontend
+  only:
+    - main
+
+# Étape de Test
+test:
+  stage: test
+  script:
+    - echo "Running tests..."
+    - docker run --rm gestion-backend pytest  # Adaptez selon vos outils
+    - docker run --rm gestion-frontend npm run test  # Frontend test
+  only:
+    - main
+
+# Étape de Déploiement
+deploy:
+  stage: deploy
+  script:
+    - echo "Deploying the application..."
+    - docker-compose -f docker-compose.yml up -d
+  only:
+    - main
