@@ -1,0 +1,67 @@
+version: '3.8'
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
+
+  backend:
+    build: ./backend
+    ports:
+      - "4000:4000"
+    depends_on:
+      - database
+    networks:
+      - app-network
+
+  database:
+    build: ./database
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: employeedb
+    ports:
+      - "3306:3306"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+Étape 3 : Configurer le Pipeline GitLab CI/CD
+Créez .gitlab-ci.yml à la racine de votre dépôt pour définir les étapes CI/CD.
+
+.gitlab-ci.yml
+
+yaml
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  DOCKER_DRIVER: overlay2
+
+services:
+  - docker:dind
+
+before_script:
+  - docker info
+
+build:
+  stage: build
+  script:
+    - docker-compose -f docker-compose.yml build
+
+test:
+  stage: test
+  script:
+    - docker-compose -f docker-compose.yml up -d
+    - docker-compose -f docker-compose.yml run frontend npm test
+    - docker-compose -f docker-compose.yml run backend npm test
+    - docker-compose -f docker-compose.yml down
+
+deploy:
+  stage: deploy
+  script:
+    - docker-compose -f docker-compose.yml up -d
